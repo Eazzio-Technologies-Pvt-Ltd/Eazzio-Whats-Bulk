@@ -1191,6 +1191,7 @@ def inspect_photos_click():
 if __name__ == '__main__':
     # Initialize database tables before running server
     init_db()
-    # Run the server on port 5002 with threading enabled
-    app.run(host='127.0.0.1', port=5002, debug=False, threaded=True)
+    # Run the server with environment port or default 5002, bound to all network interfaces
+    port = int(os.environ.get("PORT", 5002))
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
 
