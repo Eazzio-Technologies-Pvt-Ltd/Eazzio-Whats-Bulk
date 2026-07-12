@@ -1,0 +1,21 @@
+# React Dependencies
+Frontend/node_modules/
+
+# React Build Output
+Frontend/dist/
+
+# Selenium Chrome Sessions (locks files and contains private logins)
+Backend/whatsapp_chrome_session/
+Backend/temp_attachments/
+Backend/whatsapp_chrome_session_backup_*/
+
+# Database files
+Backend/contacts.db
+Backend/.env
+
+# IDE and OS Temp files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

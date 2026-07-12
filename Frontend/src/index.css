@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 17.5px; /* Scales all rem-based typography and layout elements slightly larger */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc; /* Light slate-50 background */
+  color: #1e293b; /* Dark slate-800 text */
+}
+
+/* Background moving gradient */
+.animated-bg {
+  background: linear-gradient(-45deg, #020617, #081225, #022c22, #070e1b);
+  background-size: 400% 400%;
+  animation: gradient-move 10s ease infinite;
+}
+
+@keyframes gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Floating blur blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.blob-1 {
+  background-color: #10b981; /* Emerald */
+  width: 350px;
+  height: 350px;
+  top: -50px;
+  left: -50px;
+  animation: float-blob 12s infinite ease-in-out;
+}
+
+.blob-2 {
+  background-color: #06b6d4; /* Cyan */
+  width: 450px;
+  height: 450px;
+  bottom: -100px;
+  right: -100px;
+  animation: float-blob 15s infinite ease-in-out;
+  animation-delay: -7s;
+}
+
+@keyframes float-blob {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  33% {
+    transform: translateY(-40px) translateX(40px) scale(1.15);
+  }
+  66% {
+    transform: translateY(30px) translateX(-35px) scale(0.9);
+  }
+}
