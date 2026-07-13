@@ -190,14 +190,27 @@ def get_driver():
                 print(f"[*] Custom Chrome binary path set: {path}")
                 break
     
+    # Avoid Selenium Manager hanging on Windows local environments by preferring ChromeDriverManager.
+    # On Render/Docker (headless environments), prefer direct launch because Chrome/ChromeDriver are pre-installed.
+    use_manager_first = not is_headless
+    
     try:
-        print("[*] Launching Chrome driver (direct)...")
-        driver = webdriver.Chrome(options=options)
+        if use_manager_first:
+            print("[*] Launching Chrome driver (using ChromeDriverManager)...")
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        else:
+            print("[*] Launching Chrome driver (direct)...")
+            driver = webdriver.Chrome(options=options)
     except Exception as e:
-        print(f"[!] Direct Chrome launch failed: {e}. Cleaning stale processes and trying fallback with ChromeDriverManager...")
+        print(f"[!] Primary Chrome launch failed: {e}. Cleaning stale processes and trying fallback...")
         cleanup_stale_processes()
         try:
-            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+            if use_manager_first:
+                print("[*] Falling back to Direct Chrome launch...")
+                driver = webdriver.Chrome(options=options)
+            else:
+                print("[*] Falling back to ChromeDriverManager launch...")
+                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         except Exception as e2:
             err_msg = str(e2)
             if "DevToolsActivePort" in err_msg or "crashed" in err_msg or "session not created" in err_msg:
