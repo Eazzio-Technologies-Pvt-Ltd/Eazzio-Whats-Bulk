@@ -19,3 +19,13 @@ Backend/.env
 .DS_Store
 Thumbs.db
 *.log
+
+# Python caching and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
