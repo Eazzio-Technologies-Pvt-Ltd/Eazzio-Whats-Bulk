@@ -9,24 +9,16 @@ RUN npm run build
 # Stage 2: Build the Flask backend and package with Google Chrome
 FROM python:3.10-slim
 
-# Install system dependencies & Google Chrome stable
+# Install system dependencies & Google Chrome stable via official .deb package
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     curl \
     unzip \
-    libnss3 \
-    libgconf-2-4 \
-    libxss1 \
-    libasound2 \
-    libxtst6 \
-    libgtk-3-0 \
-    libgbm1 \
     procps \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
+    && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+    && rm google-chrome-stable_current_amd64.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up work directory
