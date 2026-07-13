@@ -162,6 +162,9 @@ def get_driver():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-extensions")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
     
     is_headless = os.environ.get("HEADLESS") == "true" or os.environ.get("RENDER") is not None
     if is_headless:
@@ -223,6 +226,9 @@ def get_driver():
                         clean_options.add_argument("--disable-dev-shm-usage")
                         clean_options.add_argument("--disable-gpu")
                         clean_options.add_argument("--disable-extensions")
+                        clean_options.add_argument("--disable-blink-features=AutomationControlled")
+                        clean_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                        clean_options.add_experimental_option('useAutomationExtension', False)
                         if is_headless:
                             clean_options.add_argument("--headless=new")
                             clean_options.add_argument("--window-size=1280,800")
@@ -247,6 +253,15 @@ def get_driver():
             else:
                 raise e2
     
+    # Apply anti-bot bypass before navigating or doing anything!
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+            "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        })
+        print("[*] Stealth mode enabled: navigator.webdriver hidden successfully.")
+    except Exception as stealth_err:
+        print(f"[!] Warning: Could not enable stealth mode: {stealth_err}")
+
     # Load WhatsApp Web initially
     print("Opening WhatsApp Web. Please scan the QR code to log in (if not already logged in).")
     driver.get('https://web.whatsapp.com')
