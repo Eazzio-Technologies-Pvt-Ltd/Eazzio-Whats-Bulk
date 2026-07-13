@@ -375,10 +375,18 @@ def upload_files_via_helper(active_driver, files, is_media):
     last_err = None
     for attempt in range(15):
         try:
-            send_btn = WebDriverWait(active_driver, 3).until(
+            # Multi-fallback XPath to target the Send button on the media preview screen
+            send_btn = WebDriverWait(active_driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, 
-                    '//div[not(ancestor::footer) and @role="button" and (contains(@aria-label, "Send") or .//span[@data-icon="send"] or .//span[contains(@data-testid, "send")])] | '
-                    '//button[not(ancestor::footer) and (contains(@aria-label, "Send") or .//span[@data-icon="send"] or .//span[contains(@data-testid, "send")])] | '
+                    '//div[@role="button" and @aria-label="Send"] | '
+                    '//button[@aria-label="Send"] | '
+                    '//span[@data-icon="send"]/ancestor::div[@role="button"] | '
+                    '//span[@data-icon="send-light"]/ancestor::div[@role="button"] | '
+                    '//span[@data-testid="send"]/ancestor::div[@role="button"] | '
+                    '//span[@data-icon="send"]/ancestor::button | '
+                    '//span[@data-testid="send"]/ancestor::button | '
+                    '//span[@data-icon="send"]/.. | '
+                    '//span[@data-testid="send"]/.. | '
                     '//*[not(ancestor::footer) and (@data-icon="send" or @data-testid="send" or @aria-label="Send" or contains(@aria-label, "Send"))]'
                 ))
             )

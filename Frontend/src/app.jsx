@@ -41,6 +41,18 @@ export default function App() {
   const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
   const [qrLoadError, setQrLoadError] = useState(false);
 
+  const showQRModalRef = useRef(showQRModal);
+  useEffect(() => {
+    showQRModalRef.current = showQRModal;
+  }, [showQRModal]);
+
+  // Reset QR load error whenever timestamp updates
+  useEffect(() => {
+    if (showQRModal) {
+      setQrLoadError(false);
+    }
+  }, [qrRefreshTimestamp, showQRModal]);
+
   useEffect(() => {
     if (!showQRModal) {
       setSessionStatus({ status: "disconnected", message: "" });
@@ -74,14 +86,6 @@ export default function App() {
     };
 
     checkStatus();
-    
-    // Auto refresh screenshot every 4 seconds to capture loading states
-    const screenshotInterval = setInterval(() => {
-      if (isMounted) {
-        setQrRefreshTimestamp(Date.now());
-        setQrLoadError(false);
-      }
-    }, 4000);
 
     // Poll status every 2 seconds
     const statusInterval = setInterval(checkStatus, 2000);
@@ -89,7 +93,6 @@ export default function App() {
     return () => {
       isMounted = false;
       clearInterval(statusInterval);
-      clearInterval(screenshotInterval);
     };
   }, [showQRModal, API_BASE]);
 
@@ -2025,7 +2028,23 @@ export default function App() {
                   src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
                   alt="WhatsApp Web Live Screenshot" 
                   className="max-h-full w-auto object-contain rounded-lg shadow-sm"
-                  onError={() => setQrLoadError(true)}
+                  onLoad={() => {
+                    // Trigger next refresh after 1.5 seconds once current screenshot has successfully loaded
+                    setTimeout(() => {
+                      if (showQRModalRef.current) {
+                        setQrRefreshTimestamp(Date.now());
+                      }
+                    }, 1500);
+                  }}
+                  onError={() => {
+                    setQrLoadError(true);
+                    // Retry loading screenshot after 3 seconds on error
+                    setTimeout(() => {
+                      if (showQRModalRef.current) {
+                        setQrRefreshTimestamp(Date.now());
+                      }
+                    }, 3000);
+                  }}
                 />
               )}
             </div>
