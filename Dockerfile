@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     procps \
+    && wget -q https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - || true \
     && wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y ./google-chrome-stable_current_amd64.deb \
     && rm google-chrome-stable_current_amd64.deb \
@@ -24,9 +25,15 @@ RUN apt-get update && apt-get install -y \
 # Set up work directory
 WORKDIR /app
 
-# Copy backend requirements and install
+# Copy backend requirements, remove Windows-only/unused packages, and install
 COPY Backend/requirements.txt ./Backend/
-RUN pip install --no-cache-dir -r Backend/requirements.txt
+RUN sed -i '/pywin32/d' ./Backend/requirements.txt \
+    && sed -i '/pypiwin32/d' ./Backend/requirements.txt \
+    && sed -i '/pywinpty/d' ./Backend/requirements.txt \
+    && sed -i '/comtypes/d' ./Backend/requirements.txt \
+    && sed -i '/PyAudio/d' ./Backend/requirements.txt \
+    && sed -i '/pyttsx3/d' ./Backend/requirements.txt \
+    && pip install --no-cache-dir -r Backend/requirements.txt
 
 # Copy Flask backend code
 COPY Backend/ ./Backend/
