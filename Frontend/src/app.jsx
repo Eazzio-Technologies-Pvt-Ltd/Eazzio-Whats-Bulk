@@ -38,6 +38,57 @@ export default function App() {
   const API_BASE = import.meta.env.VITE_API_BASE || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "");
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
+  const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
+
+  useEffect(() => {
+    if (!showQRModal) {
+      setSessionStatus({ status: "disconnected", message: "" });
+      return;
+    }
+
+    let isMounted = true;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/whatsapp-status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setSessionStatus(data);
+            
+            // Auto close modal on successful connection
+            if (data.status === "connected") {
+              setTimeout(() => {
+                if (isMounted) {
+                  setShowQRModal(false);
+                  showToast("WhatsApp Web Connected Successfully! 🎉", "success");
+                }
+              }, 2500);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Status check error:", err);
+      }
+    };
+
+    checkStatus();
+    
+    // Auto refresh screenshot every 4 seconds to capture loading states
+    const screenshotInterval = setInterval(() => {
+      if (isMounted) {
+        setQrRefreshTimestamp(Date.now());
+      }
+    }, 4000);
+
+    // Poll status every 2 seconds
+    const statusInterval = setInterval(checkStatus, 2000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(statusInterval);
+      clearInterval(screenshotInterval);
+    };
+  }, [showQRModal, API_BASE]);
 
   const [user, setUser] = useState(() => {
     try {
@@ -1916,6 +1967,33 @@ export default function App() {
             <p className="text-xs text-slate-650 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
               If running in Headless mode (e.g. on Render Server), scan this QR code using your phone's WhatsApp Linked Devices to authenticate. If the session is already active, you will see your WhatsApp Web interface.
             </p>
+
+            {/* Real-time Connection Status Indicator */}
+            <div className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs font-bold transition-all ${
+              sessionStatus.status === "connected"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm"
+                : sessionStatus.status === "syncing"
+                ? "bg-amber-50 text-amber-700 border-amber-200 animate-pulse shadow-sm"
+                : "bg-slate-50 text-slate-600 border-slate-200"
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  sessionStatus.status === "connected"
+                    ? "bg-emerald-500 shadow shadow-emerald-500/50"
+                    : sessionStatus.status === "syncing"
+                    ? "bg-amber-500 animate-ping"
+                    : "bg-slate-400"
+                }`}></span>
+                <span>
+                  {sessionStatus.status === "connected"
+                    ? "Connected successfully! Closing..."
+                    : sessionStatus.status === "syncing"
+                    ? (sessionStatus.message || "Logging in & syncing chats...")
+                    : "Waiting for QR code scan..."}
+                </span>
+              </div>
+              <span className="text-[10px] uppercase font-mono tracking-wider opacity-60">Live Status</span>
+            </div>
 
             <div className="bg-slate-900/5 rounded-2xl p-4 flex items-center justify-center border border-slate-200/50 min-h-[300px] relative overflow-hidden group">
               <img 

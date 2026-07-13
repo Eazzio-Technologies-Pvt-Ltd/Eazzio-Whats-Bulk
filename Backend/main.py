@@ -1271,6 +1271,38 @@ def inspect_photos_click():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/whatsapp-status', methods=['GET'])
+def whatsapp_status():
+    global driver
+    if driver is None:
+        return jsonify({"status": "disconnected", "message": "Browser not launched"}), 200
+    try:
+        # Check if browser is responsive
+        current_url = driver.current_url
+    except Exception:
+        return jsonify({"status": "disconnected", "message": "Browser crashed or closed"}), 200
+
+    try:
+        # Check if QR code is present
+        qr_elements = driver.find_elements(By.XPATH, '//canvas[@aria-label="Scan me!"] | //div[@data-ref]')
+        if len(qr_elements) > 0:
+            return jsonify({"status": "qr_ready", "message": "Waiting for scan"}), 200
+        
+        # Check if loading spinner/progress bar is present
+        progress_elements = driver.find_elements(By.XPATH, '//progress | //div[@role="progressbar"] | //div[contains(text(),"Loading chats")]')
+        if len(progress_elements) > 0:
+            return jsonify({"status": "syncing", "message": "Logging in and syncing chats..."}), 200
+
+        # Check if main chat interface is present
+        chat_box = driver.find_elements(By.XPATH, '//div[@id="side"] | //div[@data-tab="3"] | //header')
+        if len(chat_box) > 0:
+            return jsonify({"status": "connected", "message": "WhatsApp logged in successfully!"}), 200
+
+        # If none of the above are matched, but browser is loaded, it might be loading or in some transition
+        return jsonify({"status": "syncing", "message": "Connecting to WhatsApp..."}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route('/api/qr-screenshot', methods=['GET'])
 def qr_screenshot():
     global driver
