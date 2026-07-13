@@ -40,16 +40,18 @@ export default function App() {
   const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
   const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
   const [qrLoadError, setQrLoadError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const showQRModalRef = useRef(showQRModal);
   useEffect(() => {
     showQRModalRef.current = showQRModal;
   }, [showQRModal]);
 
-  // Reset QR load error whenever timestamp updates
+  // Reset QR load error and set loading to true whenever timestamp updates
   useEffect(() => {
     if (showQRModal) {
       setQrLoadError(false);
+      setImageLoading(true);
     }
   }, [qrRefreshTimestamp, showQRModal]);
 
@@ -2013,6 +2015,16 @@ export default function App() {
             </div>
 
             <div className="bg-slate-900/5 rounded-2xl p-3 flex items-center justify-center border border-slate-200/50 h-64 relative overflow-hidden group">
+              {imageLoading && !qrLoadError && (
+                <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[1px] flex flex-col items-center justify-center space-y-3 z-10">
+                  <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-[11px] font-medium text-slate-500 animate-pulse">
+                    {sessionStatus.status === "disconnected" 
+                      ? "Starting browser session..." 
+                      : "Capturing live screenshot..."}
+                  </p>
+                </div>
+              )}
               {qrLoadError ? (
                 <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
                   <AlertCircle className="w-10 h-10 text-slate-400 stroke-[1.5] animate-pulse" />
@@ -2027,8 +2039,11 @@ export default function App() {
                 <img 
                   src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
                   alt="WhatsApp Web Live Screenshot" 
-                  className="max-h-full w-auto object-contain rounded-lg shadow-sm"
+                  className={`max-h-full w-auto object-contain rounded-lg shadow-sm transition-opacity duration-300 ${
+                    imageLoading ? 'opacity-0' : 'opacity-100'
+                  }`}
                   onLoad={() => {
+                    setImageLoading(false);
                     // Trigger next refresh after 1.5 seconds once current screenshot has successfully loaded
                     setTimeout(() => {
                       if (showQRModalRef.current) {
@@ -2038,6 +2053,7 @@ export default function App() {
                   }}
                   onError={() => {
                     setQrLoadError(true);
+                    setImageLoading(false);
                     // Retry loading screenshot after 3 seconds on error
                     setTimeout(() => {
                       if (showQRModalRef.current) {
