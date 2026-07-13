@@ -51,7 +51,7 @@ export default function ResetPassword({ onBackToLogin, onBackToLanding }) {
     setLoading(true);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "");
+      const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:5002" : (import.meta.env.VITE_API_BASE || "");
       const response = await fetch(`${API_BASE}/api/reset-password`, {
         method: "POST",
         headers: {

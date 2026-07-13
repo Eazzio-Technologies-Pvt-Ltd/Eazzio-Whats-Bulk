@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 
 export default function App() {
-  const API_BASE = import.meta.env.VITE_API_BASE || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "");
+  const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:5002" : (import.meta.env.VITE_API_BASE || "");
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
   const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });

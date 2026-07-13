@@ -164,18 +164,18 @@ def get_driver():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
-    # Low-memory & resource optimization arguments for Render Free Tier
-    options.add_argument("--single-process")
-    options.add_argument("--no-zygote")
-    options.add_argument("--disable-features=site-per-process")
-    options.add_argument('--js-flags="--max-old-space-size=128"')
-    
     is_headless = os.environ.get("HEADLESS") == "true" or os.environ.get("RENDER") is not None
     if is_headless:
         print("[*] Headless mode enabled. Configuring headless Chrome options...")
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1280,800")
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+        
+        # Low-memory & resource optimization arguments for Render Free Tier
+        options.add_argument("--single-process")
+        options.add_argument("--no-zygote")
+        options.add_argument("--disable-features=site-per-process")
+        options.add_argument('--js-flags="--max-old-space-size=128"')
         
         # Help Selenium find Chrome in headless Docker environments
         chrome_paths = [
@@ -248,16 +248,16 @@ def get_driver():
                         clean_options.add_argument("--disable-blink-features=AutomationControlled")
                         clean_options.add_experimental_option("excludeSwitches", ["enable-automation"])
                         clean_options.add_experimental_option('useAutomationExtension', False)
-                        
-                        # Low-memory & resource optimization arguments for Render Free Tier
-                        clean_options.add_argument("--single-process")
-                        clean_options.add_argument("--no-zygote")
-                        clean_options.add_argument("--disable-features=site-per-process")
-                        clean_options.add_argument('--js-flags="--max-old-space-size=128"')
                         if is_headless:
                             clean_options.add_argument("--headless=new")
                             clean_options.add_argument("--window-size=1280,800")
                             clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+                            
+                            # Low-memory & resource optimization arguments for Render Free Tier
+                            clean_options.add_argument("--single-process")
+                            clean_options.add_argument("--no-zygote")
+                            clean_options.add_argument("--disable-features=site-per-process")
+                            clean_options.add_argument('--js-flags="--max-old-space-size=128"')
                             for path in chrome_paths:
                                 if os.path.exists(path):
                                     clean_options.binary_location = path
