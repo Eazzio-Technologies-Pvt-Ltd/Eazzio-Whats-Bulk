@@ -71,10 +71,9 @@ function LiveQRView({ API_BASE }) {
       .catch(err => console.error("Launch error on mount:", err));
   }, [API_BASE]);
 
-  // Reset QR load error and set loading to true whenever timestamp updates
+  // Reset QR load error whenever timestamp updates
   useEffect(() => {
     setQrLoadError(false);
-    setImageLoading(true);
   }, [qrRefreshTimestamp]);
 
   const handleRefreshQR = () => {
