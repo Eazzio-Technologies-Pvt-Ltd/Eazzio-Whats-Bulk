@@ -137,15 +137,17 @@ function LiveQRView({ API_BASE }) {
           </div>
 
           <div className="flex-1 flex items-center justify-center relative bg-slate-950 rounded-2xl border border-slate-850 overflow-hidden min-h-[400px]">
-            {imageLoading && !qrLoadError && (
+            {/* Spinner Overlay */}
+            {!hasFirstImageLoaded && !qrLoadError && (
               <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center space-y-3 z-10">
                 <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-[11px] font-medium text-slate-400 animate-pulse font-mono">Capturing live browser feed...</p>
               </div>
             )}
             
-            {qrLoadError ? (
-              <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+            {/* Error Overlay */}
+            {qrLoadError && (
+              <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-8 text-center space-y-3 z-10">
                 <AlertCircle className="w-12 h-12 text-slate-400 stroke-[1.5] animate-pulse" />
                 <div>
                   <p className="text-sm font-bold text-slate-200">Browser session not active</p>
@@ -154,28 +156,28 @@ function LiveQRView({ API_BASE }) {
                   </p>
                 </div>
               </div>
-            ) : (
-              <img 
-                src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
-                alt="WhatsApp Web Live Screenshot" 
-                className={`max-h-[600px] w-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${
-                  imageLoading ? 'opacity-0' : 'opacity-100'
-                }`}
-                onLoad={() => {
-                  setImageLoading(false);
-                  setTimeout(() => {
-                    setQrRefreshTimestamp(Date.now());
-                  }, 1500);
-                }}
-                onError={() => {
-                  setQrLoadError(true);
-                  setImageLoading(false);
-                  setTimeout(() => {
-                    setQrRefreshTimestamp(Date.now());
-                  }, 3000);
-                }}
-              />
             )}
+
+            <img 
+              src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
+              alt="WhatsApp Web Live Screenshot" 
+              className={`max-h-[600px] w-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${
+                qrLoadError || !hasFirstImageLoaded ? 'opacity-0 absolute pointer-events-none' : 'opacity-100'
+              }`}
+              onLoad={() => {
+                setQrLoadError(false);
+                setHasFirstImageLoaded(true);
+                setTimeout(() => {
+                  setQrRefreshTimestamp(Date.now());
+                }, 1500);
+              }}
+              onError={() => {
+                setQrLoadError(true);
+                setTimeout(() => {
+                  setQrRefreshTimestamp(Date.now());
+                }, 4000);
+              }}
+            />
           </div>
         </div>
 
@@ -226,18 +228,21 @@ export default function App() {
   const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
   const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
   const [qrLoadError, setQrLoadError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
+  const [hasFirstImageLoaded, setHasFirstImageLoaded] = useState(false);
 
   const showQRModalRef = useRef(showQRModal);
   useEffect(() => {
     showQRModalRef.current = showQRModal;
+    if (showQRModal) {
+      setQrLoadError(false);
+      setHasFirstImageLoaded(false);
+    }
   }, [showQRModal]);
 
-  // Reset QR load error and set loading to true whenever timestamp updates
+  // Reset QR load error whenever timestamp updates
   useEffect(() => {
     if (showQRModal) {
       setQrLoadError(false);
-      setImageLoading(true);
     }
   }, [qrRefreshTimestamp, showQRModal]);
 
@@ -2201,7 +2206,8 @@ export default function App() {
             </div>
 
             <div className="bg-slate-900/5 rounded-2xl p-3 flex items-center justify-center border border-slate-200/50 h-64 relative overflow-hidden group">
-              {imageLoading && !qrLoadError && (
+              {/* Spinner Overlay */}
+              {!hasFirstImageLoaded && !qrLoadError && (
                 <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[1px] flex flex-col items-center justify-center space-y-3 z-10">
                   <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                   <p className="text-[11px] font-medium text-slate-500 animate-pulse">
@@ -2211,8 +2217,10 @@ export default function App() {
                   </p>
                 </div>
               )}
-              {qrLoadError ? (
-                <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
+              
+              {/* Error Overlay */}
+              {qrLoadError && (
+                <div className="absolute inset-0 bg-slate-50/95 flex flex-col items-center justify-center p-6 text-center space-y-2 z-10">
                   <AlertCircle className="w-10 h-10 text-slate-400 stroke-[1.5] animate-pulse" />
                   <div>
                     <p className="text-xs font-bold text-slate-700">Browser session not active</p>
@@ -2221,34 +2229,34 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-              ) : (
-                <img 
-                  src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
-                  alt="WhatsApp Web Live Screenshot" 
-                  className={`max-h-full w-auto object-contain rounded-lg shadow-sm transition-opacity duration-300 ${
-                    imageLoading ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  onLoad={() => {
-                    setImageLoading(false);
-                    // Trigger next refresh after 1.5 seconds once current screenshot has successfully loaded
-                    setTimeout(() => {
-                      if (showQRModalRef.current) {
-                        setQrRefreshTimestamp(Date.now());
-                      }
-                    }, 1500);
-                  }}
-                  onError={() => {
-                    setQrLoadError(true);
-                    setImageLoading(false);
-                    // Retry loading screenshot after 3 seconds on error
-                    setTimeout(() => {
-                      if (showQRModalRef.current) {
-                        setQrRefreshTimestamp(Date.now());
-                      }
-                    }, 3000);
-                  }}
-                />
               )}
+
+              <img 
+                src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
+                alt="WhatsApp Web Live Screenshot" 
+                className={`max-h-full w-auto object-contain rounded-lg shadow-sm transition-opacity duration-300 ${
+                  qrLoadError || !hasFirstImageLoaded ? 'opacity-0 absolute pointer-events-none' : 'opacity-100'
+                }`}
+                onLoad={() => {
+                  setQrLoadError(false);
+                  setHasFirstImageLoaded(true);
+                  // Trigger next refresh after 1.5 seconds once current screenshot has successfully loaded
+                  setTimeout(() => {
+                    if (showQRModalRef.current) {
+                      setQrRefreshTimestamp(Date.now());
+                    }
+                  }, 1500);
+                }}
+                onError={() => {
+                  setQrLoadError(true);
+                  // Retry loading screenshot after 4 seconds on error
+                  setTimeout(() => {
+                    if (showQRModalRef.current) {
+                      setQrRefreshTimestamp(Date.now());
+                    }
+                  }, 4000);
+                }}
+              />
             </div>
 
             <div className="flex flex-col gap-2 pt-2.5 border-t border-slate-100">
