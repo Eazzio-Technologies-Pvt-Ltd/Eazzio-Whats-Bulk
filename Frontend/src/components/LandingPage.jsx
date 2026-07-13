@@ -22,7 +22,19 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function LandingPage({ onLaunchApp }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [playgroundText, setPlaygroundText] = useState("Hey there! 🚀 Just wanted to let you know that our new WhatsApp marketing tool is now live. Try it out!");
+  const [hoveredPlan, setHoveredPlan] = useState(null);
   
+  const getCardClassName = (index) => {
+    const base = "bg-white border rounded-3xl p-8 transition-all duration-305 flex flex-col justify-between relative overflow-hidden group";
+    if (hoveredPlan === index) {
+      return `${base} border-emerald-500 shadow-xl scale-[1.04] z-20 bg-white/95 backdrop-blur-sm`;
+    } else if (hoveredPlan !== null) {
+      return `${base} border-slate-200 shadow-sm blur-[2px] opacity-50 scale-[0.96] pointer-events-none`;
+    } else {
+      return `${base} border-slate-200 shadow-sm hover:-translate-y-1`;
+    }
+  };
+
   // Typing simulation state for the hero phone mockup
   const [heroMessages, setHeroMessages] = useState([
     { id: 1, text: "Hey! How does the bulk sender work?", isSender: false, time: "10:30 AM", status: "read" },
@@ -104,6 +116,7 @@ export default function LandingPage({ onLaunchApp }) {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
             <button onClick={() => scrollToSection("features")} className="hover:text-emerald-650 transition-colors">Features</button>
+            <button onClick={() => scrollToSection("pricing")} className="hover:text-emerald-650 transition-colors">Pricing</button>
             <button onClick={() => scrollToSection("playground")} className="hover:text-emerald-650 transition-colors">Live Preview</button>
           </div>
 
@@ -135,6 +148,7 @@ export default function LandingPage({ onLaunchApp }) {
               className="md:hidden mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4 text-slate-600 text-base pb-2"
             >
               <button onClick={() => scrollToSection("features")} className="text-left py-2 hover:text-emerald-605 transition-colors">Features</button>
+              <button onClick={() => scrollToSection("pricing")} className="text-left py-2 hover:text-emerald-605 transition-colors">Pricing</button>
               <button onClick={() => scrollToSection("playground")} className="text-left py-2 hover:text-emerald-605 transition-colors">Live Preview</button>
               <button 
                 onClick={onLaunchApp}
@@ -346,6 +360,214 @@ export default function LandingPage({ onLaunchApp }) {
               <p className="text-slate-655 text-sm leading-relaxed">
                 Simple, beautiful web interface controls the powerful backend driver automatically. Just input your messaging details and watch it run.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 w-full px-6 md:px-12 lg:px-16 bg-slate-100/50 border-y border-slate-200 relative z-10">
+        <div className="w-full px-4 md:px-12 lg:px-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-semibold text-emerald-700">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              <span>Flexible Pricing Plans</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">
+              Pricing designed for your business scale
+            </h2>
+            <p className="text-slate-600 text-base md:text-lg">
+              No contracts, no setup fees. Switch or cancel your plan at any time.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+            {/* Card 1: Free */}
+            <div 
+              onMouseEnter={() => setHoveredPlan(0)} 
+              onMouseLeave={() => setHoveredPlan(null)} 
+              className={getCardClassName(0)}
+            >
+              <div className="space-y-6">
+                <div>
+                  <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">Basic</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-1">Free Trial</h3>
+                  <p className="text-slate-505 text-xs mt-1">Perfect for trying out Whats-Bulk Sender.</p>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-5xl font-extrabold text-slate-900">₹0</span>
+                  <span className="text-slate-500 text-sm ml-2">/month</span>
+                </div>
+                <div className="border-t border-slate-100 pt-6">
+                  <ul className="space-y-3.5">
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>100 Messages / day</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>1 WhatsApp Session</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Staggered sending delays</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Community support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-8 pt-4">
+                <button onClick={onLaunchApp} className="w-full py-3 rounded-xl border border-emerald-600 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors text-sm">
+                  Get Started
+                </button>
+              </div>
+            </div>
+
+            {/* Card 2: Starter */}
+            <div 
+              onMouseEnter={() => setHoveredPlan(1)} 
+              onMouseLeave={() => setHoveredPlan(null)} 
+              className={getCardClassName(1)}
+            >
+              <div className="space-y-6">
+                <div>
+                  <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">Growth</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-1">Starter</h3>
+                  <p className="text-slate-505 text-xs mt-1">Ideal for small businesses & startups.</p>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-5xl font-extrabold text-slate-900">₹99</span>
+                  <span className="text-slate-500 text-sm ml-2">/month</span>
+                </div>
+                <div className="border-t border-slate-100 pt-6">
+                  <ul className="space-y-3.5">
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>2,500 Messages / day</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>3 WhatsApp Sessions</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Custom Name variables</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Media & Doc Attachments</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Email Support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-8 pt-4">
+                <button onClick={onLaunchApp} className="w-full py-3 rounded-xl border border-emerald-600 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors text-sm">
+                  Choose Starter
+                </button>
+              </div>
+            </div>
+
+            {/* Card 3: Pro */}
+            <div 
+              onMouseEnter={() => setHoveredPlan(2)} 
+              onMouseLeave={() => setHoveredPlan(null)} 
+              className={getCardClassName(2)}
+            >
+              <div className="space-y-6">
+                <div>
+                  <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">Business</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-1">Pro Plan</h3>
+                  <p className="text-slate-505 text-xs mt-1">For marketing agencies & power users.</p>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-5xl font-extrabold text-slate-900">₹199</span>
+                  <span className="text-slate-500 text-sm ml-2">/month</span>
+                </div>
+                <div className="border-t border-slate-100 pt-6">
+                  <ul className="space-y-3.5">
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Unlimited Messages / day</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>10 WhatsApp Sessions</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Fast Staggered Sending</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Cloud backup for attachments</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Priority 24/7 Support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-8 pt-4">
+                <button onClick={onLaunchApp} className="w-full py-3 rounded-xl border border-emerald-600 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors text-sm">
+                  Go Pro Now
+                </button>
+              </div>
+            </div>
+
+            {/* Card 4: Enterprise */}
+            <div 
+              onMouseEnter={() => setHoveredPlan(3)} 
+              onMouseLeave={() => setHoveredPlan(null)} 
+              className={getCardClassName(3)}
+            >
+              <div className="space-y-6">
+                <div>
+                  <span className="text-xs font-bold text-slate-455 uppercase tracking-widest">Enterprise</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-1">Enterprise</h3>
+                  <p className="text-slate-505 text-xs mt-1">Custom tools for high volume teams.</p>
+                </div>
+                <div className="flex items-baseline">
+                  <span className="text-5xl font-extrabold text-slate-900">₹299</span>
+                  <span className="text-slate-500 text-sm ml-2">/month</span>
+                </div>
+                <div className="border-t border-slate-100 pt-6">
+                  <ul className="space-y-3.5">
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Everything in Pro</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Unlimited Accounts</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>API Integrations access</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Dedicated Session Manager</span>
+                    </li>
+                    <li className="flex items-center gap-2.5 text-xs text-slate-600">
+                      <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Account Manager support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-8 pt-4">
+                <button onClick={onLaunchApp} className="w-full py-3 rounded-xl border border-emerald-600 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors text-sm">
+                  Contact Sales
+                </button>
+              </div>
             </div>
           </div>
         </div>
