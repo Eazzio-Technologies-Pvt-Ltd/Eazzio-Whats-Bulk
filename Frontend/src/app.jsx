@@ -27,7 +27,10 @@ import {
   Trash2,
   User,
   Lock,
-  Home
+  Home,
+  MoreVertical,
+  Edit2,
+  RotateCcw
 } from "lucide-react";
 
 export default function App() {
@@ -81,13 +84,13 @@ export default function App() {
   const [status, setStatus] = useState("Idle"); // Idle, Sending..., Success, Error
 
   // Bulk Campaigns State
-  const [campaignName, setCampaignName] = useState("Marketing Campaign " + new Date().toLocaleDateString());
   const [directNumbersInput, setDirectNumbersInput] = useState("");
   const [bulkContacts, setBulkContacts] = useState([]); // Array of { name, phone }
   const [campaignMessage, setCampaignMessage] = useState("");
   const [campaignAttachments, setCampaignAttachments] = useState([]); // Files list
   const [campaignDelay, setCampaignDelay] = useState(10); // delay in seconds
   const [campaignRunning, setCampaignRunning] = useState(false);
+  const [campaignPausing, setCampaignPausing] = useState(false);
   const [campaignContacts, setCampaignContacts] = useState([]); // Live state with status: 'pending' | 'sending' | 'success' | 'error'
   const [currentCampaignIndex, setCurrentCampaignIndex] = useState(0);
 
@@ -130,6 +133,28 @@ export default function App() {
   const [newContactName, setNewContactName] = useState("");
   const [newContactPhone, setNewContactPhone] = useState("");
   const [saveStatus, setSaveStatus] = useState("Idle");
+  const [activeDropdownContactId, setActiveDropdownContactId] = useState(null);
+  const [editingContact, setEditingContact] = useState(null);
+  const [launchingWhatsapp, setLaunchingWhatsapp] = useState(false);
+
+  const handleLaunchWhatsapp = async () => {
+    setLaunchingWhatsapp(true);
+    try {
+      const res = await fetch("http://localhost:5002/api/launch", {
+        method: "POST"
+      });
+      if (res.ok) {
+        showToast("WhatsApp Web opened successfully! 📱", "success");
+      } else {
+        const data = await res.json();
+        showToast(`Error: ${data.message || "Failed to launch"}`, "error");
+      }
+    } catch (err) {
+      showToast("Error: Backend is unreachable", "error");
+    } finally {
+      setLaunchingWhatsapp(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("whats_bulk_user");
@@ -309,6 +334,15 @@ export default function App() {
     } else {
       showToast(`${contact.name} added to campaign! 🌟`, "success");
     }
+  };
+
+  const handleRemoveFromBulk = (contact) => {
+    setBulkContacts(prev => {
+      const updated = prev.filter(c => c.phone !== contact.phone);
+      setDirectNumbersInput(updated.map(c => `${c.name}:${c.phone}`).join('\n'));
+      return updated;
+    });
+    showToast(`${contact.name} removed from campaign! 🗑️`, "info");
   };
 
   // Campaign ref for loop pausing/canceling
@@ -520,6 +554,14 @@ export default function App() {
       return;
     }
 
+    // Check if there is an active paused campaign
+    const pendingCount = campaignContacts.filter(c => c.status === "pending" || c.status === "sending").length;
+    if (campaignContacts.length > 0 && pendingCount > 0) {
+      if (!window.confirm("You have a paused campaign. Starting a new campaign will discard the current progress. Do you want to continue?")) {
+        return;
+      }
+    }
+
     // Initialize campaign run state
     const initialContacts = bulkContacts.map(c => ({
       ...c,
@@ -528,6 +570,7 @@ export default function App() {
     }));
     setCampaignContacts(initialContacts);
     setCampaignRunning(true);
+    campaignRunningRef.current = true;
     setCurrentCampaignIndex(0);
 
     // Call runner
@@ -536,52 +579,68 @@ export default function App() {
     }, 500);
   };
 
-  const runBulkCampaignLoop = async (contactsToRun) => {
+  const runBulkCampaignLoop = async (contactsToRun, startIndex = 0) => {
     let updatedContacts = [...contactsToRun];
 
-    for (let i = 0; i < updatedContacts.length; i++) {
-      if (!campaignRunningRef.current) {
-        break;
-      }
+    try {
+      for (let i = startIndex; i < updatedContacts.length; i++) {
+        if (!campaignRunningRef.current) {
+          break;
+        }
 
-      updatedContacts[i].status = "sending";
-      setCampaignContacts([...updatedContacts]);
-      setCurrentCampaignIndex(i);
+        updatedContacts[i].status = "sending";
+        setCampaignContacts([...updatedContacts]);
+        setCurrentCampaignIndex(i);
 
-      const contact = updatedContacts[i];
-      const personalizedMsg = campaignMessage.replace(/{{Name}}/g, contact.name);
+        const contact = updatedContacts[i];
+        const personalizedMsg = campaignMessage.replace(/{{Name}}/g, contact.name);
 
-      // Construct Multipart Form Data for attachments support
-      const formData = new FormData();
-      formData.append("phone", contact.phone);
-      formData.append("message", personalizedMsg);
-      campaignAttachments.forEach(file => {
-        formData.append("attachments", file);
-      });
-
-      try {
-        const response = await fetch("http://localhost:5002/api/send", {
-          method: "POST",
-          body: formData,
+        // Construct Multipart Form Data for attachments support
+        const formData = new FormData();
+        formData.append("phone", contact.phone);
+        formData.append("message", personalizedMsg);
+        campaignAttachments.forEach(file => {
+          formData.append("attachments", file);
         });
 
-        const data = await response.json();
+        try {
+          const response = await fetch("http://localhost:5002/api/send", {
+            method: "POST",
+            body: formData,
+          });
 
-        if (response.ok) {
-          updatedContacts[i].status = "success";
-          setHistory(prev => [
-            {
-              id: Date.now() + i,
-              name: contact.name,
-              phone: contact.phone,
-              status: "Success",
-              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            },
-            ...prev
-          ]);
-        } else {
+          const data = await response.json();
+
+          if (response.ok) {
+            updatedContacts[i].status = "success";
+            setHistory(prev => [
+              {
+                id: Date.now() + i,
+                name: contact.name,
+                phone: contact.phone,
+                status: "Success",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              },
+              ...prev
+            ]);
+          } else {
+            updatedContacts[i].status = "error";
+            updatedContacts[i].errorMsg = data.message || "Failed to deliver";
+            setHistory(prev => [
+              {
+                id: Date.now() + i,
+                name: contact.name,
+                phone: contact.phone,
+                status: "Error",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              },
+              ...prev
+            ]);
+          }
+        } catch (err) {
+          console.error(err);
           updatedContacts[i].status = "error";
-          updatedContacts[i].errorMsg = data.message || "Failed to deliver";
+          updatedContacts[i].errorMsg = "Server unreachable";
           setHistory(prev => [
             {
               id: Date.now() + i,
@@ -593,35 +652,79 @@ export default function App() {
             ...prev
           ]);
         }
-      } catch (err) {
-        console.error(err);
-        updatedContacts[i].status = "error";
-        updatedContacts[i].errorMsg = "Server unreachable";
-        setHistory(prev => [
-          {
-            id: Date.now() + i,
-            name: contact.name,
-            phone: contact.phone,
-            status: "Error",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          },
-          ...prev
-        ]);
-      }
 
-      setCampaignContacts([...updatedContacts]);
+        setCampaignContacts([...updatedContacts]);
 
-      // Delay between messages (if not last message)
-      if (i < updatedContacts.length - 1 && campaignRunningRef.current) {
-        await new Promise(resolve => setTimeout(resolve, campaignDelay * 1000));
+        // Interruptible delay between messages
+        if (i < updatedContacts.length - 1 && campaignRunningRef.current) {
+          const delaySeconds = campaignDelay;
+          const intervalMs = 100;
+          const totalMs = delaySeconds * 1000;
+          let elapsed = 0;
+          while (elapsed < totalMs && campaignRunningRef.current) {
+            await new Promise(resolve => setTimeout(resolve, intervalMs));
+            elapsed += intervalMs;
+          }
+        }
       }
+    } finally {
+      setCampaignRunning(false);
+      setCampaignPausing(false);
     }
-
-    setCampaignRunning(false);
   };
 
   const handlePauseCampaign = () => {
-    setCampaignRunning(false);
+    campaignRunningRef.current = false;
+    setCampaignPausing(true);
+  };
+
+  const handleResumeCampaign = () => {
+    const firstPendingIndex = campaignContacts.findIndex(c => c.status === "pending" || c.status === "sending");
+    const startIndex = firstPendingIndex !== -1 ? firstPendingIndex : 0;
+
+    // Reset status of "sending" to "pending" to retry/continue
+    const updated = campaignContacts.map((c, idx) => {
+      if (idx >= startIndex) {
+        return { ...c, status: "pending", errorMsg: "" };
+      }
+      return c;
+    });
+
+    setCampaignContacts(updated);
+    setCampaignRunning(true);
+    campaignRunningRef.current = true;
+    setCampaignPausing(false);
+    setCurrentCampaignIndex(startIndex);
+
+    setTimeout(() => {
+      runBulkCampaignLoop(updated, startIndex);
+    }, 500);
+  };
+
+  const handleRestartCampaign = () => {
+    const resetContacts = campaignContacts.map(c => ({
+      ...c,
+      status: "pending",
+      errorMsg: ""
+    }));
+
+    setCampaignContacts(resetContacts);
+    setCampaignRunning(true);
+    campaignRunningRef.current = true;
+    setCampaignPausing(false);
+    setCurrentCampaignIndex(0);
+
+    setTimeout(() => {
+      runBulkCampaignLoop(resetContacts, 0);
+    }, 500);
+  };
+
+  const handleResetCampaignConsole = () => {
+    if (window.confirm("Are you sure you want to reset the campaign progress console?")) {
+      setCampaignContacts([]);
+      setCurrentCampaignIndex(0);
+      setCampaignPausing(false);
+    }
   };
 
   const populateTemplate = (templateText, isBulk = false) => {
@@ -775,16 +878,15 @@ export default function App() {
               </p>
             </div>
 
-            {/* Quick Stats Banner */}
-            <div className="flex items-center gap-3 bg-white border border-slate-200 p-2.5 rounded-xl text-xs shadow-sm">
-              <div className="text-center px-3 border-r border-slate-200">
-                <div className="font-bold text-emerald-600">{history.filter(h => h.status === "Success").length}</div>
-                <div className="text-[9px] text-slate-550 font-semibold uppercase">Sent</div>
-              </div>
-              <div className="text-center px-2">
-                <div className="font-bold text-slate-705">{history.length}</div>
-                <div className="text-[9px] text-slate-550 font-semibold uppercase">Total Logs</div>
-              </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={handleLaunchWhatsapp}
+                disabled={launchingWhatsapp}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-300 text-white font-extrabold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs shrink-0"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>{launchingWhatsapp ? "Launching..." : "Launch WhatsApp Web"}</span>
+              </button>
             </div>
           </div>
 
@@ -991,15 +1093,15 @@ export default function App() {
               </p>
             </div>
 
-            {/* Campaign Name Settings */}
-            <div className="bg-white border border-slate-200 p-2.5 rounded-xl shadow-sm max-w-xs w-full">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Campaign Identifier</span>
-              <input 
-                type="text" 
-                value={campaignName} 
-                onChange={(e) => setCampaignName(e.target.value)}
-                className="w-full text-sm font-semibold bg-slate-50 border border-slate-200 p-1.5 rounded outline-none focus:border-emerald-600 text-slate-800"
-              />
+            <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
+              <button
+                onClick={handleLaunchWhatsapp}
+                disabled={launchingWhatsapp}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-300 text-white font-extrabold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs shrink-0"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>{launchingWhatsapp ? "Launching..." : "Launch WhatsApp Web"}</span>
+              </button>
             </div>
           </div>
 
@@ -1222,14 +1324,60 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
                       <span className="text-xs text-amber-800 font-semibold">
-                        Sending target {currentCampaignIndex + 1} of {totalContactsCount}...
+                        {campaignPausing 
+                          ? "Pausing campaign after current message..."
+                          : `Sending target ${currentCampaignIndex + 1} of ${totalContactsCount}...`
+                        }
                       </span>
                     </div>
                     <button 
                       onClick={handlePauseCampaign}
-                      className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold shadow-sm"
+                      disabled={campaignPausing}
+                      className="bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 disabled:cursor-not-allowed text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold shadow-sm transition-all"
                     >
-                      <Pause className="w-3.5 h-3.5" /> Pause
+                      <Pause className="w-3.5 h-3.5" /> {campaignPausing ? "Pausing..." : "Pause"}
+                    </button>
+                  </div>
+                )}
+
+                {!campaignRunning && totalContactsCount > 0 && pendingCount > 0 && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      <span className="text-xs text-amber-800 font-bold">
+                        Campaign Paused ({pendingCount} contacts pending)
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleResumeCampaign}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 font-bold shadow-sm transition-all"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-current" /> Resume
+                      </button>
+                      <button 
+                        onClick={handleRestartCampaign}
+                        className="flex-1 bg-slate-600 hover:bg-slate-700 text-white text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 font-bold shadow-sm transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" /> Restart
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!campaignRunning && totalContactsCount > 0 && pendingCount === 0 && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-250 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span className="text-xs text-emerald-800 font-bold">
+                        Campaign Completed Successfully! 🎉
+                      </span>
+                    </div>
+                    <button 
+                      onClick={handleResetCampaignConsole}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 font-bold border border-slate-300 transition-all"
+                    >
+                      Clear Progress Console
                     </button>
                   </div>
                 )}
@@ -1402,35 +1550,88 @@ export default function App() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {savedContacts.length > 0 ? (
-                        savedContacts.map((contact) => (
-                          <tr key={contact.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-3.5 font-semibold text-slate-800">{contact.name}</td>
-                            <td className="p-3.5 font-mono text-slate-600">{contact.phone}</td>
-                            <td className="p-3.5 text-right flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleSelectForDirect(contact)}
-                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1.5 rounded-lg font-bold transition-all text-xs"
-                                title="Send Direct Message"
-                              >
-                                Send Direct
-                              </button>
-                              <button
-                                onClick={() => handleAddToBulk(contact)}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-lg font-bold transition-all text-xs"
-                                title="Add to Bulk Queue"
-                              >
-                                Add to Bulk
-                              </button>
-                              <button
-                                onClick={() => handleDeleteContact(contact.id)}
-                                className="hover:bg-rose-50 text-rose-600 p-1.5 rounded-lg transition-colors border border-transparent hover:border-rose-100"
-                                title="Delete Record"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
+                        savedContacts.map((contact) => {
+                          const isInBulk = bulkContacts.some(c => c.phone === contact.phone);
+                          return (
+                            <tr key={contact.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-3.5 font-semibold text-slate-800">{contact.name}</td>
+                              <td className="p-3.5 font-mono text-slate-600">{contact.phone}</td>
+                              <td className="p-3.5 text-right flex items-center justify-end gap-3">
+                                {isInBulk ? (
+                                  <button
+                                    onClick={() => handleRemoveFromBulk(contact)}
+                                    className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg font-bold transition-all text-xs w-32 text-center"
+                                    title="Remove from Bulk Queue"
+                                  >
+                                    Remove from Bulk
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleAddToBulk(contact)}
+                                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold transition-all text-xs w-32 text-center"
+                                    title="Add to Bulk Queue"
+                                  >
+                                    Add to Bulk
+                                  </button>
+                                )}
+                                
+                                <div className="relative inline-block text-left">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveDropdownContactId(prev => prev === contact.id ? null : contact.id);
+                                    }}
+                                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors border border-transparent"
+                                    title="More Options"
+                                  >
+                                    <MoreVertical className="w-4 h-4" />
+                                  </button>
+                                  {activeDropdownContactId === contact.id && (
+                                    <>
+                                      <div 
+                                        className="fixed inset-0 z-20" 
+                                        onClick={() => setActiveDropdownContactId(null)}
+                                      ></div>
+                                      <div className="absolute right-0 mt-1.5 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1.5 text-left origin-top-right transition-all">
+                                        <button
+                                          onClick={() => {
+                                            handleSelectForDirect(contact);
+                                            setActiveDropdownContactId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center gap-2"
+                                        >
+                                          <Send className="w-3.5 h-3.5 text-slate-400" />
+                                          <span>Send Direct</span>
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setEditingContact({ ...contact });
+                                            setActiveDropdownContactId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center gap-2"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5 text-slate-400" />
+                                          <span>Edit Contact</span>
+                                        </button>
+                                        <div className="border-t border-slate-100 my-1"></div>
+                                        <button
+                                          onClick={() => {
+                                            handleDeleteContact(contact.id);
+                                            setActiveDropdownContactId(null);
+                                          }}
+                                          className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-2"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                          <span>Delete</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan="3" className="text-center p-8 text-slate-450 font-medium">
@@ -1445,6 +1646,99 @@ export default function App() {
 
             </div>
           </div>
+
+          {/* Edit Contact Modal */}
+          {editingContact && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-6 animate-in fade-in zoom-in duration-200">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <h3 className="text-lg font-bold text-slate-900">Edit Contact</h3>
+                  <button 
+                    onClick={() => setEditingContact(null)}
+                    className="text-slate-400 hover:text-slate-600 font-mono text-xl font-bold p-1"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!editingContact.name.trim() || !editingContact.phone.trim()) {
+                      alert("Name and Phone number are required!");
+                      return;
+                    }
+                    try {
+                      const res = await fetch(`http://localhost:5002/api/contacts/${editingContact.id}`, {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "X-User-Id": user.id.toString()
+                        },
+                        body: JSON.stringify({
+                          name: editingContact.name,
+                          phone: editingContact.phone
+                        })
+                      });
+                      const data = await res.json();
+                      if (res.ok) {
+                        showToast("Contact updated successfully! 📝", "success");
+                        setEditingContact(null);
+                        fetchSavedContacts(searchQuery);
+                      } else {
+                        alert(data.message || "Failed to update contact");
+                      }
+                    } catch (err) {
+                      alert("Error: Backend is unreachable");
+                    }
+                  }} 
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                      Contact Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editingContact.name}
+                      onChange={(e) => setEditingContact(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-250 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none transition-all text-base text-slate-900"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={editingContact.phone}
+                      onChange={(e) => setEditingContact(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-250 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 outline-none transition-all text-base text-slate-900"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingContact(null)}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </main>
       )}
 

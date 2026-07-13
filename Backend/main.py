@@ -567,6 +567,14 @@ def send_whatsapp_message():
             except Exception as e:
                 print(f"Failed to delete temp file {file_path}: {e}")
 
+@app.route('/api/launch', methods=['POST', 'GET'])
+def launch_whatsapp():
+    try:
+        get_driver()
+        return jsonify({"status": "Success", "message": "WhatsApp Web launched successfully!"}), 200
+    except Exception as e:
+        return jsonify({"status": "Error", "message": str(e)}), 500
+
 # --- DATABASE ENDPOINTS ---
 def get_db_connection():
     db_url = os.getenv("DATABASE_URL")
@@ -648,6 +656,34 @@ def delete_contact(contact_id):
         conn.commit()
         conn.close()
         return jsonify({"status": "Success", "message": "Contact deleted successfully!"}), 200
+    except Exception as e:
+        return jsonify({"status": "Error", "message": str(e)}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['PUT'])
+def edit_contact(contact_id):
+    user_id = request.headers.get('X-User-Id') or request.args.get('user_id')
+    data = request.json or {}
+    name = data.get('name', '').strip()
+    phone = data.get('phone', '').strip()
+    
+    if not user_id:
+        return jsonify({"status": "Error", "message": "User context is required!"}), 400
+    if not name or not phone:
+        return jsonify({"status": "Error", "message": "Name and phone number are required!"}), 400
+        
+    clean_phone = "".join(c for c in phone if c.isdigit())
+    if len(clean_phone) < 7:
+        return jsonify({"status": "Error", "message": "Phone number is too short or invalid!"}), 400
+        
+    try:
+        conn, db_type = get_db_connection()
+        cursor = conn.cursor()
+        execute_db_query(cursor, "UPDATE contacts SET name = ?, phone = ? WHERE id = ? AND user_id = ?", (name, clean_phone, contact_id, user_id), db_type)
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "Success", "message": "Contact updated successfully!"}), 200
+    except (sqlite3.IntegrityError, PGIntegrityError):
+        return jsonify({"status": "Error", "message": "Phone number already exists in your database!"}), 400
     except Exception as e:
         return jsonify({"status": "Error", "message": str(e)}), 500
 
