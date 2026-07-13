@@ -158,50 +158,83 @@ def get_driver():
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1280,800")
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        
+        # Help Selenium find Chrome in headless Docker environments
+        chrome_paths = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser"
+        ]
+        for path in chrome_paths:
+            if os.path.exists(path):
+                options.binary_location = path
+                print(f"[*] Custom Chrome binary path set: {path}")
+                break
     
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        print("[*] Launching Chrome driver (direct)...")
+        driver = webdriver.Chrome(options=options)
     except Exception as e:
-        err_msg = str(e)
-        if "DevToolsActivePort" in err_msg or "crashed" in err_msg or "session not created" in err_msg:
-            print("\n[!] Chrome failed to start with current profile. Initializing self-healing fallback...")
-            
-            # Fallback 1: Rename the locked/corrupted profile directory so Chrome starts fresh
-            backup_path = profile_path + f"_backup_{int(time.time())}"
-            try:
-                if os.path.exists(profile_path):
-                    os.rename(profile_path, backup_path)
-                    print(f"[*] Moved locked/corrupted profile to backup: {backup_path}")
-            except Exception as rename_err:
-                print(f"[!] Could not rename profile folder: {rename_err}")
+        print(f"[!] Direct Chrome launch failed: {e}. Trying fallback with ChromeDriverManager...")
+        try:
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+        except Exception as e2:
+            err_msg = str(e2)
+            if "DevToolsActivePort" in err_msg or "crashed" in err_msg or "session not created" in err_msg:
+                print("\n[!] Chrome failed to start with current profile. Initializing self-healing fallback...")
                 
-            # Retry starting Chrome with a clean profile directory path
-            try:
-                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-                print("[*] Started Chrome successfully with a fresh profile. Please scan the QR code.")
-            except Exception as retry_err:
-                print(f"[!] Clean profile initialization failed: {retry_err}")
-                
-                # Fallback 2: Start Chrome without user-data-dir (incognito/guest style)
-                print("[*] Attempting Fallback 2: Launching Chrome without custom profile directory...")
-                clean_options = Options()
-                clean_options.add_argument("--no-sandbox")
-                clean_options.add_argument("--disable-dev-shm-usage")
-                clean_options.add_argument("--disable-gpu")
-                clean_options.add_argument("--disable-extensions")
-                if is_headless:
-                    clean_options.add_argument("--headless=new")
-                    clean_options.add_argument("--window-size=1280,800")
-                    clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                # Fallback 1: Rename the locked/corrupted profile directory so Chrome starts fresh
+                backup_path = profile_path + f"_backup_{int(time.time())}"
                 try:
-                    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=clean_options)
-                    print("[*] Chrome launched successfully in guest mode.")
-                except Exception as final_err:
-                    explanation = f"Critical Chrome start error: {str(final_err)}. Please verify Chrome is installed."
-                    print(f"\n[!] FATAL: {explanation}\n")
-                    raise Exception(explanation)
-        else:
-            raise e
+                    if os.path.exists(profile_path):
+                        os.rename(profile_path, backup_path)
+                        print(f"[*] Moved locked/corrupted profile to backup: {backup_path}")
+                except Exception as rename_err:
+                    print(f"[!] Could not rename profile folder: {rename_err}")
+                    
+                # Retry starting Chrome with a clean profile directory path
+                try:
+                    print("[*] Retrying Chrome launch with clean profile (direct)...")
+                    driver = webdriver.Chrome(options=options)
+                except Exception as retry_err:
+                    print(f"[!] Direct clean retry failed: {retry_err}. Trying with ChromeDriverManager...")
+                    try:
+                        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+                        print("[*] Started Chrome successfully with a fresh profile. Please scan the QR code.")
+                    except Exception as retry_err2:
+                        print(f"[!] Clean profile initialization failed: {retry_err2}")
+                        
+                        # Fallback 2: Start Chrome without user-data-dir (incognito/guest style)
+                        print("[*] Attempting Fallback 2: Launching Chrome without custom profile directory...")
+                        clean_options = Options()
+                        clean_options.add_argument("--no-sandbox")
+                        clean_options.add_argument("--disable-dev-shm-usage")
+                        clean_options.add_argument("--disable-gpu")
+                        clean_options.add_argument("--disable-extensions")
+                        if is_headless:
+                            clean_options.add_argument("--headless=new")
+                            clean_options.add_argument("--window-size=1280,800")
+                            clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                            for path in chrome_paths:
+                                if os.path.exists(path):
+                                    clean_options.binary_location = path
+                                    break
+                        try:
+                            print("[*] Launching Chrome in guest mode (direct)...")
+                            driver = webdriver.Chrome(options=clean_options)
+                            print("[*] Chrome launched successfully in guest mode.")
+                        except Exception as final_err:
+                            print(f"[!] Direct guest mode failed: {final_err}. Trying with ChromeDriverManager...")
+                            try:
+                                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=clean_options)
+                                print("[*] Chrome launched successfully in guest mode.")
+                            except Exception as final_err2:
+                                explanation = f"Critical Chrome start error: {str(final_err2)}. Please verify Chrome is installed."
+                                print(f"\n[!] FATAL: {explanation}\n")
+                                raise Exception(explanation)
+            else:
+                raise e2
     
     # Load WhatsApp Web initially
     print("Opening WhatsApp Web. Please scan the QR code to log in (if not already logged in).")
