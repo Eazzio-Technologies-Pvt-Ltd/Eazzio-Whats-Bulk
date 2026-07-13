@@ -34,8 +34,188 @@ import {
   QrCode
 } from "lucide-react";
 
+function LiveQRView({ API_BASE }) {
+  const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
+  const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
+  const [qrLoadError, setQrLoadError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  // Sync session status
+  useEffect(() => {
+    let isMounted = true;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/whatsapp-status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setSessionStatus(data);
+          }
+        }
+      } catch (err) {
+        console.error("Status check error:", err);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [API_BASE]);
+
+  // Reset QR load error and set loading to true whenever timestamp updates
+  useEffect(() => {
+    setQrLoadError(false);
+    setImageLoading(true);
+  }, [qrRefreshTimestamp]);
+
+  const handleRefreshQR = () => {
+    setQrRefreshTimestamp(Date.now());
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* Header */}
+      <header className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="bg-emerald-600 p-2.5 rounded-2xl text-white">
+            <QrCode className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-white">WhatsApp Live Server Session</h1>
+            <p className="text-xs text-slate-400">Scan this QR code to authenticate the automatic bulk messenger</p>
+          </div>
+        </div>
+
+        {/* Live Status indicator */}
+        <div className={`px-4 py-2 rounded-xl border flex items-center gap-2.5 text-xs font-bold transition-all ${
+          sessionStatus.status === "connected"
+            ? "bg-emerald-950/80 text-emerald-400 border-emerald-800 shadow-sm"
+            : sessionStatus.status === "syncing"
+            ? "bg-amber-950/80 text-amber-400 border-amber-800 animate-pulse shadow-sm"
+            : "bg-slate-800 text-slate-400 border-slate-700"
+        }`}>
+          <span className={`w-2.5 h-2.5 rounded-full ${
+            sessionStatus.status === "connected"
+              ? "bg-emerald-500 shadow shadow-emerald-500/50"
+              : sessionStatus.status === "syncing"
+              ? "bg-amber-500 animate-ping"
+              : "bg-slate-500"
+          }`}></span>
+          <span>
+            {sessionStatus.status === "connected"
+              ? "Connected successfully!"
+              : sessionStatus.status === "syncing"
+              ? (sessionStatus.message || "Logging in & syncing chats...")
+              : (sessionStatus.message || "Waiting for QR code scan...")}
+          </span>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-6 flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full items-stretch">
+        {/* Left Side: Live Browser Feed */}
+        <div className="flex-1 bg-slate-900 border border-slate-850 rounded-3xl p-5 flex flex-col relative overflow-hidden min-h-[480px]">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-emerald-500" /> Live Browser Feed
+            </span>
+            <button 
+              onClick={handleRefreshQR}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md shadow-emerald-600/10 flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> Refresh View
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center relative bg-slate-950 rounded-2xl border border-slate-850 overflow-hidden min-h-[400px]">
+            {imageLoading && !qrLoadError && (
+              <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center space-y-3 z-10">
+                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[11px] font-medium text-slate-400 animate-pulse font-mono">Capturing live browser feed...</p>
+              </div>
+            )}
+            
+            {qrLoadError ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                <AlertCircle className="w-12 h-12 text-slate-400 stroke-[1.5] animate-pulse" />
+                <div>
+                  <p className="text-sm font-bold text-slate-200">Browser session not active</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+                    The automated WhatsApp Web browser is not active. Please retry or click "Launch WhatsApp Web" from the main dashboard.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
+                alt="WhatsApp Web Live Screenshot" 
+                className={`max-h-[600px] w-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${
+                  imageLoading ? 'opacity-0' : 'opacity-100'
+                }`}
+                onLoad={() => {
+                  setImageLoading(false);
+                  setTimeout(() => {
+                    setQrRefreshTimestamp(Date.now());
+                  }, 1500);
+                }}
+                onError={() => {
+                  setQrLoadError(true);
+                  setImageLoading(false);
+                  setTimeout(() => {
+                    setQrRefreshTimestamp(Date.now());
+                  }, 3000);
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: Instructions */}
+        <div className="w-full lg:w-80 bg-slate-900 border border-slate-850 rounded-3xl p-6 flex flex-col justify-between">
+          <div className="space-y-6">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800 pb-3">Instructions</h2>
+            
+            <ol className="space-y-4 text-xs text-slate-300 list-decimal pl-4">
+              <li>Open <strong>WhatsApp</strong> on your phone.</li>
+              <li>Tap <strong>Menu</strong> (three dots) or <strong>Settings</strong> and select <strong>Linked Devices</strong>.</li>
+              <li>Tap <strong>Link a Device</strong>.</li>
+              <li>Point your phone's camera at the QR code displayed in the live browser screen on the left to authenticate.</li>
+            </ol>
+            
+            <div className="bg-slate-950/50 border border-slate-850 p-4 rounded-2xl space-y-2 text-[11px] text-slate-400 leading-relaxed">
+              <span className="font-bold text-emerald-500">Why are you seeing this?</span>
+              <p>
+                Since the application is running in a secure, headless cloud environment (Render), this window acts as a remote view portal to the automated browser session.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-800 mt-6">
+            <button 
+              onClick={() => window.close()}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-xl transition-all duration-200 text-xs text-center"
+            >
+              Close Live View
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
   const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:5002" : (import.meta.env.VITE_API_BASE || "");
+  const urlParams = new URLSearchParams(window.location.search);
+  const isLiveView = urlParams.get("view") === "live-qr";
+
+  if (isLiveView) {
+    return <LiveQRView API_BASE={API_BASE} />;
+  }
+
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
   const [sessionStatus, setSessionStatus] = useState({ status: "disconnected", message: "" });
@@ -205,9 +385,9 @@ export default function App() {
     setLaunchingWhatsapp(true);
     // Open in a new standalone window immediately to bypass browser popup blockers
     const waWindow = window.open(
-      "https://web.whatsapp.com",
+      `${window.location.origin}?view=live-qr`,
       "_blank",
-      "width=1100,height=850,menubar=no,toolbar=no,location=no,status=no,noopener,noreferrer"
+      "width=1120,height=850,menubar=no,toolbar=no,location=no,status=no"
     );
 
     try {
@@ -2065,20 +2245,35 @@ export default function App() {
               )}
             </div>
 
-            <div className="flex gap-3 pt-2.5 border-t border-slate-100">
+            <div className="flex flex-col gap-2 pt-2.5 border-t border-slate-100">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowQRModal(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition-all duration-200 text-xs"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefreshQR}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Refresh Screen
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowQRModal(false)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition-all duration-200 text-xs"
+                onClick={() => {
+                  window.open(
+                    `${window.location.origin}?view=live-qr`,
+                    "_blank",
+                    "width=1120,height=850,menubar=no,toolbar=no,location=no,status=no"
+                  );
+                }}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl transition-all duration-200 text-[10px] flex items-center justify-center gap-1.5 border border-slate-700"
               >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={handleRefreshQR}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs flex items-center justify-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Refresh Screen
+                <QrCode className="w-3.5 h-3.5" /> Open Live View in New Window
               </button>
             </div>
           </div>
