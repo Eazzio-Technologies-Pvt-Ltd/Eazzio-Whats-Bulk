@@ -61,7 +61,18 @@ if cloudinary is not None:
 
 frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Frontend", "dist"))
 app = Flask(__name__, static_folder=frontend_dist_dir, static_url_path="")
-CORS(app, resources={r"/*": {"origins": "*", "allow_headers": "*", "methods": "*"}}) # Enable CORS for React frontend
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "allow_headers": ["Content-Type", "Authorization", "X-User-Id", "x-user-id"],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+}}) # Enable CORS for React frontend
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-User-Id,x-user-id'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    return response
 
 new_msg_time = 10
 country_code = "91"
