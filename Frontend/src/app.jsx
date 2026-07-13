@@ -65,6 +65,12 @@ function LiveQRView({ API_BASE }) {
     };
   }, [API_BASE]);
 
+  // Trigger backend driver launch on mount to start Chrome automatically
+  useEffect(() => {
+    fetch(`${API_BASE}/api/launch`, { method: "POST" })
+      .catch(err => console.error("Launch error on mount:", err));
+  }, [API_BASE]);
+
   // Reset QR load error and set loading to true whenever timestamp updates
   useEffect(() => {
     setQrLoadError(false);
