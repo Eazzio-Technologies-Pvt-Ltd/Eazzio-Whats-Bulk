@@ -1,0 +1,11 @@
+**/node_modules
+**/.venv
+**/dist
+**/.git
+**/whatsapp_chrome_session
+**/.env
+**/temp_qr.png
+Backend/temp_qr.png
+Backend/whatsapp_chrome_session
+Frontend/node_modules
+Frontend/dist
