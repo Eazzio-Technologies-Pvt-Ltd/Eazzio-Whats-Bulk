@@ -166,6 +166,12 @@ def get_driver():
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
     
+    # Low-memory & resource optimization arguments for Render Free Tier
+    options.add_argument("--single-process")
+    options.add_argument("--no-zygote")
+    options.add_argument("--disable-features=site-per-process")
+    options.add_argument('--js-flags="--max-old-space-size=128"')
+    
     is_headless = os.environ.get("HEADLESS") == "true" or os.environ.get("RENDER") is not None
     if is_headless:
         print("[*] Headless mode enabled. Configuring headless Chrome options...")
@@ -229,6 +235,12 @@ def get_driver():
                         clean_options.add_argument("--disable-blink-features=AutomationControlled")
                         clean_options.add_experimental_option("excludeSwitches", ["enable-automation"])
                         clean_options.add_experimental_option('useAutomationExtension', False)
+                        
+                        # Low-memory & resource optimization arguments for Render Free Tier
+                        clean_options.add_argument("--single-process")
+                        clean_options.add_argument("--no-zygote")
+                        clean_options.add_argument("--disable-features=site-per-process")
+                        clean_options.add_argument('--js-flags="--max-old-space-size=128"')
                         if is_headless:
                             clean_options.add_argument("--headless=new")
                             clean_options.add_argument("--window-size=1280,800")
@@ -1327,7 +1339,8 @@ def whatsapp_status():
         # If none of the above are matched, but browser is loaded, it might be loading or in some transition
         return jsonify({"status": "syncing", "message": "Connecting to WhatsApp..."}), 200
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"[!] whatsapp_status check error: {e}")
+        return jsonify({"status": "disconnected", "message": f"Session resetting or busy: {str(e)}"}), 200
 
 @app.route('/api/qr-screenshot', methods=['GET'])
 def qr_screenshot():
