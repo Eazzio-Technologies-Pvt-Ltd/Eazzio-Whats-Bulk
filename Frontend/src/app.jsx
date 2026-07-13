@@ -58,7 +58,7 @@ function LiveQRView({ API_BASE }) {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 2000);
+    const interval = setInterval(checkStatus, 4000);
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -168,7 +168,7 @@ function LiveQRView({ API_BASE }) {
                 setHasFirstImageLoaded(true);
                 setTimeout(() => {
                   setQrRefreshTimestamp(Date.now());
-                }, 1500);
+                }, 4000);
               }}
               onError={() => {
                 setQrLoadError(true);
@@ -279,8 +279,8 @@ export default function App() {
 
     checkStatus();
 
-    // Poll status every 2 seconds
-    const statusInterval = setInterval(checkStatus, 2000);
+    // Poll status every 4 seconds
+    const statusInterval = setInterval(checkStatus, 4000);
 
     return () => {
       isMounted = false;
@@ -2239,12 +2239,12 @@ export default function App() {
                 onLoad={() => {
                   setQrLoadError(false);
                   setHasFirstImageLoaded(true);
-                  // Trigger next refresh after 1.5 seconds once current screenshot has successfully loaded
+                  // Trigger next refresh after 4 seconds once current screenshot has successfully loaded
                   setTimeout(() => {
                     if (showQRModalRef.current) {
                       setQrRefreshTimestamp(Date.now());
                     }
-                  }, 1500);
+                  }, 4000);
                 }}
                 onError={() => {
                   setQrLoadError(true);

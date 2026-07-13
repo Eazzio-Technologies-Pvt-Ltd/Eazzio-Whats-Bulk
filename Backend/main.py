@@ -1400,7 +1400,11 @@ def qr_screenshot():
             print("[*] Captured full page screenshot (QR element not found).")
             
         from flask import send_file
-        return send_file(temp_qr_path, mimetype='image/png')
+        response = send_file(temp_qr_path, mimetype='image/png')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
     except Exception as e:
         return jsonify({"status": "Error", "message": f"Failed to capture screenshot: {str(e)}"}), 500
 
