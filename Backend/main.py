@@ -105,35 +105,33 @@ def get_driver():
                 pass
             driver = None
 
-    # This is a new launch, clean up any lingering stale processes from previous runs first
-    print("Checking for lingering WhatsApp Chrome processes...")
-    try:
-        import psutil
-        # 1. Kill lingering chromedriver
-        for proc in psutil.process_iter(['pid', 'name']):
-            try:
-                proc_name = proc.info['name']
-                if proc_name and proc_name.lower() in ['chromedriver', 'chromedriver.exe']:
-                    proc.kill()
-            except Exception:
-                pass
-        
-        # 2. Kill lingering chrome instances using our custom session profile
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                proc_name = proc.info['name']
-                if proc_name and proc_name.lower() in ['chrome', 'chrome.exe', 'google-chrome']:
-                    cmdline = proc.info['cmdline']
-                    if cmdline and any('whatsapp_chrome_session' in arg for arg in cmdline):
-                        print(f"Killing stale automated Chrome process: {proc.info['pid']}")
+    def cleanup_stale_processes():
+        print("[*] Cleaning up lingering WhatsApp Chrome/ChromeDriver processes...")
+        try:
+            import psutil
+            # 1. Kill lingering chromedriver
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    proc_name = proc.info['name']
+                    if proc_name and proc_name.lower() in ['chromedriver', 'chromedriver.exe']:
                         proc.kill()
-            except Exception:
-                pass
-                
-        time.sleep(1.5) # Give OS a moment to release file locks
-        print("Stale WhatsApp Chrome/ChromeDriver processes cleaned up.")
-    except Exception as cleanup_err:
-        print(f"Lingering process cleanup warning: {cleanup_err}")
+                except Exception:
+                    pass
+            
+            # 2. Kill lingering chrome instances using our custom session profile
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    proc_name = proc.info['name']
+                    if proc_name and proc_name.lower() in ['chrome', 'chrome.exe', 'google-chrome']:
+                        cmdline = proc.info['cmdline']
+                        if cmdline and any('whatsapp_chrome_session' in arg for arg in cmdline):
+                            proc.kill()
+                except Exception:
+                    pass
+            time.sleep(0.5)
+            print("[*] Stale WhatsApp Chrome processes cleaned up.")
+        except Exception as cleanup_err:
+            print(f"Lingering process cleanup warning: {cleanup_err}")
 
     # Initialize a new Chrome webdriver with persistent session profile
     print("Starting WhatsApp Selenium webdriver...")
@@ -196,13 +194,15 @@ def get_driver():
         print("[*] Launching Chrome driver (direct)...")
         driver = webdriver.Chrome(options=options)
     except Exception as e:
-        print(f"[!] Direct Chrome launch failed: {e}. Trying fallback with ChromeDriverManager...")
+        print(f"[!] Direct Chrome launch failed: {e}. Cleaning stale processes and trying fallback with ChromeDriverManager...")
+        cleanup_stale_processes()
         try:
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
         except Exception as e2:
             err_msg = str(e2)
             if "DevToolsActivePort" in err_msg or "crashed" in err_msg or "session not created" in err_msg:
-                print("\n[!] Chrome failed to start with current profile. Initializing self-healing fallback...")
+                print("\n[!] Chrome failed to start with current profile. Cleaning stale processes and initializing self-healing fallback...")
+                cleanup_stale_processes()
                 
                 # Fallback 1: Rename the locked/corrupted profile directory so Chrome starts fresh
                 backup_path = profile_path + f"_backup_{int(time.time())}"
@@ -306,7 +306,7 @@ def upload_files_via_helper(active_driver, files, is_media):
         )
         active_driver.execute_script("arguments[0].click();", attach_btn)
         print("Clicked attach button to open attachment menu.")
-        time.sleep(0.8)
+        time.sleep(0.3)
     except Exception as attach_err:
         print(f"Warning: Could not click attach button: {attach_err}")
         
@@ -325,7 +325,7 @@ def upload_files_via_helper(active_driver, files, is_media):
             break
         except (StaleElementReferenceException, Exception) as click_err:
             print(f"Click attempt {attempt} failed: {click_err}. Retrying...")
-            time.sleep(0.5)
+            time.sleep(0.2)
     
     # 4. Wait for window._lastClickedInput to be set and retrieve its ID
     input_id = None
@@ -390,7 +390,7 @@ def upload_files_via_helper(active_driver, files, is_media):
         message="Timed out waiting for main chat textbox to return after attachment send."
     )
     print("Returned to main chat screen successfully.")
-    time.sleep(1.5)
+    time.sleep(0.3)
 
 @app.route('/api/health', methods=['GET', 'POST'])
 def health_check():
@@ -516,9 +516,9 @@ def send_whatsapp_message():
                 WebDriverWait(active_driver, 8).until(EC.staleness_of(old_textbox))
                 print("Transition to new chat started.")
             except Exception:
-                time.sleep(3)
+                time.sleep(0.5)
         else:
-            time.sleep(3)
+            time.sleep(0.1)
         
         # Wait for either the chat text box OR the invalid number popup/dialog to appear
         target_xpath = (
@@ -589,7 +589,7 @@ def send_whatsapp_message():
             # Click the textbox specifically to focus it
             try:
                 element.click()
-                time.sleep(0.5)
+                time.sleep(0.1)
             except Exception as click_err:
                 print(f"Warning: Could not click textbox element: {click_err}")
 
@@ -601,7 +601,7 @@ def send_whatsapp_message():
                 actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT)
             actions.send_keys(Keys.ENTER)
             actions.perform()
-            time.sleep(1)
+            time.sleep(0.2)
             
             # Fallback: Click the send button if Enter key press didn't send/clear it
             try:
@@ -611,11 +611,11 @@ def send_whatsapp_message():
                     send_btn = active_driver.find_element(By.XPATH, '//span[@data-icon="send"] | //button[@data-testid="compose-btn-send"] | //span[@data-testid="send"]')
                     send_btn.click()
                     print("Clicked Send button fallback.")
-                    time.sleep(1)
+                    time.sleep(0.2)
             except Exception:
                 pass
             
-            time.sleep(1)
+            time.sleep(0.2)
             
         # Send attachments if any
         media_files = []
