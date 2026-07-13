@@ -175,7 +175,7 @@ def get_driver():
         print("[*] Headless mode enabled. Configuring headless Chrome options...")
         options.add_argument("--headless=new")
         options.add_argument("--window-size=1280,800")
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
         
         # Help Selenium find Chrome in headless Docker environments
         chrome_paths = [
@@ -244,7 +244,7 @@ def get_driver():
                         if is_headless:
                             clean_options.add_argument("--headless=new")
                             clean_options.add_argument("--window-size=1280,800")
-                            clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                            clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
                             for path in chrome_paths:
                                 if os.path.exists(path):
                                     clean_options.binary_location = path
@@ -1362,7 +1362,22 @@ def qr_screenshot():
 
     try:
         temp_qr_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_qr.png")
-        driver.save_screenshot(temp_qr_path)
+        
+        # Try to locate the QR code element and screenshot only that element (makes it huge and easy to scan!)
+        qr_captured = False
+        try:
+            qr_element = driver.find_element(By.XPATH, '//canvas[@aria-label="Scan me!"] | //div[@data-ref]')
+            qr_element.screenshot(temp_qr_path)
+            qr_captured = True
+            print("[*] Captured cropped QR code element screenshot.")
+        except Exception:
+            pass
+            
+        if not qr_captured:
+            # Fallback to full page screenshot if element not found yet
+            driver.save_screenshot(temp_qr_path)
+            print("[*] Captured full page screenshot (QR element not found).")
+            
         from flask import send_file
         return send_file(temp_qr_path, mimetype='image/png')
     except Exception as e:
