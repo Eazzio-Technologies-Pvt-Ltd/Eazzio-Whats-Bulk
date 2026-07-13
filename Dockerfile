@@ -25,15 +25,9 @@ RUN apt-get update && apt-get install -y \
 # Set up work directory
 WORKDIR /app
 
-# Copy backend requirements, remove Windows-only/unused packages, and install
+# Copy backend requirements and install
 COPY Backend/requirements.txt ./Backend/
-RUN sed -i '/pywin32/d' ./Backend/requirements.txt \
-    && sed -i '/pypiwin32/d' ./Backend/requirements.txt \
-    && sed -i '/pywinpty/d' ./Backend/requirements.txt \
-    && sed -i '/comtypes/d' ./Backend/requirements.txt \
-    && sed -i '/PyAudio/d' ./Backend/requirements.txt \
-    && sed -i '/pyttsx3/d' ./Backend/requirements.txt \
-    && pip install --no-cache-dir -r Backend/requirements.txt
+RUN pip install --no-cache-dir -r Backend/requirements.txt
 
 # Copy Flask backend code
 COPY Backend/ ./Backend/
