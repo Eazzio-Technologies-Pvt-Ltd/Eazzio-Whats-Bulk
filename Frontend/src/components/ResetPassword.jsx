@@ -51,7 +51,8 @@ export default function ResetPassword({ onBackToLogin, onBackToLanding }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5002/api/reset-password", {
+      const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "";
+      const response = await fetch(`${API_BASE}/api/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

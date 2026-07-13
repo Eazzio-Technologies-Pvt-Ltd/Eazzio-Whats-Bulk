@@ -59,7 +59,8 @@ if cloudinary is not None:
         except Exception as e:
             print(f"[!] Error configuring Cloudinary: {e}")
 
-app = Flask(__name__)
+frontend_dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Frontend", "dist"))
+app = Flask(__name__, static_folder=frontend_dist_dir, static_url_path="")
 CORS(app) # Enable CORS for React frontend
 
 new_msg_time = 10
@@ -100,7 +101,8 @@ def get_driver():
         # 1. Kill lingering chromedriver
         for proc in psutil.process_iter(['pid', 'name']):
             try:
-                if proc.info['name'] and proc.info['name'].lower() == 'chromedriver.exe':
+                proc_name = proc.info['name']
+                if proc_name and proc_name.lower() in ['chromedriver', 'chromedriver.exe']:
                     proc.kill()
             except Exception:
                 pass
@@ -108,7 +110,8 @@ def get_driver():
         # 2. Kill lingering chrome instances using our custom session profile
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
-                if proc.info['name'] and proc.info['name'].lower() == 'chrome.exe':
+                proc_name = proc.info['name']
+                if proc_name and proc_name.lower() in ['chrome', 'chrome.exe', 'google-chrome']:
                     cmdline = proc.info['cmdline']
                     if cmdline and any('whatsapp_chrome_session' in arg for arg in cmdline):
                         print(f"Killing stale automated Chrome process: {proc.info['pid']}")
@@ -149,6 +152,13 @@ def get_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-extensions")
     
+    is_headless = os.environ.get("HEADLESS") == "true" or os.environ.get("RENDER") is not None
+    if is_headless:
+        print("[*] Headless mode enabled. Configuring headless Chrome options...")
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1280,800")
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     except Exception as e:
@@ -179,6 +189,10 @@ def get_driver():
                 clean_options.add_argument("--disable-dev-shm-usage")
                 clean_options.add_argument("--disable-gpu")
                 clean_options.add_argument("--disable-extensions")
+                if is_headless:
+                    clean_options.add_argument("--headless=new")
+                    clean_options.add_argument("--window-size=1280,800")
+                    clean_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 try:
                     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=clean_options)
                     print("[*] Chrome launched successfully in guest mode.")
@@ -1223,6 +1237,41 @@ def inspect_photos_click():
         return jsonify({"status": "success", "inputs": input_details}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/qr-screenshot', methods=['GET'])
+def qr_screenshot():
+    global driver
+    if driver is None:
+        try:
+            get_driver()
+        except Exception as e:
+            return jsonify({"status": "Error", "message": f"Could not launch browser: {str(e)}"}), 500
+    
+    try:
+        # Check if browser is still responsive
+        driver.current_url
+    except Exception:
+        try:
+            get_driver()
+        except Exception as e:
+            return jsonify({"status": "Error", "message": f"Could not relaunch browser: {str(e)}"}), 500
+
+    try:
+        temp_qr_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_qr.png")
+        driver.save_screenshot(temp_qr_path)
+        from flask import send_file
+        return send_file(temp_qr_path, mimetype='image/png')
+    except Exception as e:
+        return jsonify({"status": "Error", "message": f"Failed to capture screenshot: {str(e)}"}), 500
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    from flask import send_from_directory
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     # Initialize database tables before running server

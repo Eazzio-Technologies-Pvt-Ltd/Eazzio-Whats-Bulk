@@ -30,10 +30,15 @@ import {
   Home,
   MoreVertical,
   Edit2,
-  RotateCcw
+  RotateCcw,
+  QrCode
 } from "lucide-react";
 
 export default function App() {
+  const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "";
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrRefreshTimestamp, setQrRefreshTimestamp] = useState(Date.now());
+
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem("whats_bulk_user") || sessionStorage.getItem("whats_bulk_user");
@@ -140,11 +145,12 @@ export default function App() {
   const handleLaunchWhatsapp = async () => {
     setLaunchingWhatsapp(true);
     try {
-      const res = await fetch("http://localhost:5002/api/launch", {
+      const res = await fetch(`${API_BASE}/api/launch`, {
         method: "POST"
       });
       if (res.ok) {
         showToast("WhatsApp Web opened successfully! 📱", "success");
+        setShowQRModal(true);
       } else {
         const data = await res.json();
         showToast(`Error: ${data.message || "Failed to launch"}`, "error");
@@ -154,6 +160,10 @@ export default function App() {
     } finally {
       setLaunchingWhatsapp(false);
     }
+  };
+
+  const handleRefreshQR = () => {
+    setQrRefreshTimestamp(Date.now());
   };
 
   const handleLogout = () => {
@@ -232,8 +242,8 @@ export default function App() {
     if (!user || !user.id) return;
     try {
       const url = query.trim() 
-        ? `http://localhost:5002/api/contacts/search?q=${encodeURIComponent(query)}`
-        : "http://localhost:5002/api/contacts";
+        ? `${API_BASE}/api/contacts/search?q=${encodeURIComponent(query)}`
+        : `${API_BASE}/api/contacts`;
       const res = await fetch(url, {
         headers: {
           "X-User-Id": user.id.toString()
@@ -268,7 +278,7 @@ export default function App() {
     }
     setSaveStatus("Saving...");
     try {
-      const res = await fetch("http://localhost:5002/api/contacts", {
+      const res = await fetch(`${API_BASE}/api/contacts`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -295,7 +305,7 @@ export default function App() {
     if (!user || !user.id) return;
     if (!window.confirm("Are you sure you want to delete this contact?")) return;
     try {
-      const res = await fetch(`http://localhost:5002/api/contacts/${id}`, {
+      const res = await fetch(`${API_BASE}/api/contacts/${id}`, {
         method: "DELETE",
         headers: {
           "X-User-Id": user.id.toString()
@@ -357,7 +367,7 @@ export default function App() {
 
     const checkBackend = async () => {
       try {
-        const response = await fetch("http://localhost:5002/api/health");
+        const response = await fetch(`${API_BASE}/api/health`);
         if (response.ok) {
           setBackendConnected(true);
         } else {
@@ -392,7 +402,7 @@ export default function App() {
     setStatus("Sending...");
     
     try {
-      const response = await fetch("http://localhost:5002/api/send", {
+      const response = await fetch(`${API_BASE}/api/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -604,7 +614,7 @@ export default function App() {
         });
 
         try {
-          const response = await fetch("http://localhost:5002/api/send", {
+          const response = await fetch(`${API_BASE}/api/send`, {
             method: "POST",
             body: formData,
           });
@@ -887,6 +897,13 @@ export default function App() {
                 <MessageSquare className="w-4 h-4" />
                 <span>{launchingWhatsapp ? "Launching..." : "Launch WhatsApp Web"}</span>
               </button>
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-xl border border-slate-300 transition-all text-xs shrink-0"
+              >
+                <QrCode className="w-4 h-4 text-slate-500" />
+                <span>View QR Screen</span>
+              </button>
             </div>
           </div>
 
@@ -1101,6 +1118,13 @@ export default function App() {
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{launchingWhatsapp ? "Launching..." : "Launch WhatsApp Web"}</span>
+              </button>
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-xl border border-slate-300 transition-all text-xs shrink-0"
+              >
+                <QrCode className="w-4 h-4 text-slate-500" />
+                <span>View QR Screen</span>
               </button>
             </div>
           </div>
@@ -1669,7 +1693,7 @@ export default function App() {
                       return;
                     }
                     try {
-                      const res = await fetch(`http://localhost:5002/api/contacts/${editingContact.id}`, {
+                      const res = await fetch(`${API_BASE}/api/contacts/${editingContact.id}`, {
                         method: "PUT",
                         headers: {
                           "Content-Type": "application/json",
@@ -1809,7 +1833,7 @@ export default function App() {
                     <span className="text-sm font-bold text-slate-700">Backend Server Info</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    All operations are processed through the backend server running locally on <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-semibold">http://localhost:5002</code>. Database storage uses SQLite.
+                    All operations are processed through the backend server running on <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-semibold">{API_BASE || window.location.origin}</code>. Database storage uses SQLite.
                   </p>
                 </div>
 
@@ -1872,6 +1896,57 @@ export default function App() {
           <p className="text-xs text-slate-500 mt-1 font-semibold">Bulk Campaign Queue</p>
         </div>
       </div>
+      {/* WhatsApp Live QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-extrabold text-slate-900">WhatsApp Live QR Scanner</h3>
+              </div>
+              <button 
+                onClick={() => setShowQRModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-mono text-2xl font-bold p-1 transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-650 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+              If running in Headless mode (e.g. on Render Server), scan this QR code using your phone's WhatsApp Linked Devices to authenticate. If the session is already active, you will see your WhatsApp Web interface.
+            </p>
+
+            <div className="bg-slate-900/5 rounded-2xl p-4 flex items-center justify-center border border-slate-200/50 min-h-[300px] relative overflow-hidden group">
+              <img 
+                src={`${API_BASE}/api/qr-screenshot?t=${qrRefreshTimestamp}`} 
+                alt="WhatsApp Web Live Screenshot" 
+                className="max-h-[400px] w-auto object-contain rounded-lg shadow-sm"
+                onError={(e) => {
+                  e.target.src = "https://placehold.co/400x400/f8fafc/64748b?text=Browser+session+not+active.+Please+Launch+first.";
+                }}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowQRModal(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all duration-200 text-sm"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handleRefreshQR}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/10 text-sm flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-4 h-4" /> Refresh Screen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

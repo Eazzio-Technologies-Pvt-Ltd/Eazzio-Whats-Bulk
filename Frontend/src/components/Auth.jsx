@@ -52,7 +52,8 @@ export default function Auth({ onAuthSuccess, onBackToLanding }) {
         bodyData = { email, password };
       }
 
-      const response = await fetch(`http://localhost:5002${endpoint}`, {
+      const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:5002" : "";
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
