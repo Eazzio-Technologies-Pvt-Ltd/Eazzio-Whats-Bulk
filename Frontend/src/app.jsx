@@ -2008,7 +2008,7 @@ export default function App() {
                     ? "Connected successfully! Closing..."
                     : sessionStatus.status === "syncing"
                     ? (sessionStatus.message || "Logging in & syncing chats...")
-                    : "Waiting for QR code scan..."}
+                    : (sessionStatus.message || "Waiting for QR code scan...")}
                 </span>
               </div>
               <span className="text-[10px] uppercase font-mono tracking-wider opacity-60">Live Status</span>
