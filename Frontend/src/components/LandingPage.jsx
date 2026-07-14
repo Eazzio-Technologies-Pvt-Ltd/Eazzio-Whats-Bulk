@@ -115,8 +115,8 @@ export default function LandingPage({ onLaunchApp }) {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <button onClick={() => scrollToSection("features")} className="hover:text-emerald-650 transition-colors">Features</button>
             <button onClick={() => scrollToSection("pricing")} className="hover:text-emerald-650 transition-colors">Pricing</button>
+            <button onClick={() => scrollToSection("features")} className="hover:text-emerald-650 transition-colors">Features</button>
             <button onClick={() => scrollToSection("playground")} className="hover:text-emerald-650 transition-colors">Live Preview</button>
           </div>
 
@@ -147,8 +147,8 @@ export default function LandingPage({ onLaunchApp }) {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden mt-4 pt-4 border-t border-slate-200 flex flex-col gap-4 text-slate-600 text-base pb-2"
             >
-              <button onClick={() => scrollToSection("features")} className="text-left py-2 hover:text-emerald-605 transition-colors">Features</button>
               <button onClick={() => scrollToSection("pricing")} className="text-left py-2 hover:text-emerald-605 transition-colors">Pricing</button>
+              <button onClick={() => scrollToSection("features")} className="text-left py-2 hover:text-emerald-605 transition-colors">Features</button>
               <button onClick={() => scrollToSection("playground")} className="text-left py-2 hover:text-emerald-605 transition-colors">Live Preview</button>
               <button 
                 onClick={onLaunchApp}
@@ -283,88 +283,6 @@ export default function LandingPage({ onLaunchApp }) {
         </div>
       </section>
 
-      {/* Feature Cards Grid Section */}
-      <section id="features" className="bg-slate-100/50 border-y border-slate-200 py-20 relative z-10">
-        <div className="w-full px-6 md:px-12 lg:px-16">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">
-              Built for Speed, Engineered for Safety
-            </h2>
-            <p className="text-slate-600 text-base md:text-lg">
-              Everything you need to broadcast marketing messages, client notifications, and announcements through WhatsApp with built-in safeguards.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Zap className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Instant Message Delivery</h3>
-              <p className="text-slate-650 text-sm leading-relaxed">
-                Connect and broadcast in real-time. Messages are sent sequentially with instant updates on success or error logs.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Shield className="w-6 h-6 text-teal-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Anti-Ban Mechanisms</h3>
-              <p className="text-slate-655 text-sm leading-relaxed">
-                Uses organic staggered delays and connection handling to match natural typing patterns, protecting your WhatsApp account from restrictions.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Real-time Campaign Monitor</h3>
-              <p className="text-slate-655 text-sm leading-relaxed">
-                Detailed delivery indicators (Sending, Success, Error status) let you know exactly who received your message and when.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Custom Recipient Fields</h3>
-              <p className="text-slate-655 text-sm leading-relaxed">
-                Address recipients by their names. Personalizing your messages increases click-through rates and client satisfaction dramatically.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Smartphone className="w-6 h-6 text-sky-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Seamless Session Persistence</h3>
-              <p className="text-slate-655 text-sm leading-relaxed">
-                Scan once and stay logged in. Our local session technology remembers your QR configuration so you can start sending instantly every time.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Layers className="w-6 h-6 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">No Backend Coding Needed</h3>
-              <p className="text-slate-655 text-sm leading-relaxed">
-                Simple, beautiful web interface controls the powerful backend driver automatically. Just input your messaging details and watch it run.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Pricing Section */}
       <section id="pricing" className="py-20 w-full px-6 md:px-12 lg:px-16 bg-slate-100/50 border-y border-slate-200 relative z-10">
         <div className="w-full px-4 md:px-12 lg:px-16">
@@ -434,9 +352,9 @@ export default function LandingPage({ onLaunchApp }) {
             >
               <div className="space-y-6">
                 <div>
-                  <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">Growth</span>
+                  <span className="text-xs font-bold text-slate-455 uppercase tracking-widest">Growth</span>
                   <h3 className="text-xl font-bold text-slate-900 mt-1">Starter</h3>
-                  <p className="text-slate-505 text-xs mt-1">Ideal for small businesses & startups.</p>
+                  <p className="text-slate-550 text-xs mt-1">Ideal for small businesses & startups.</p>
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-5xl font-extrabold text-slate-900">₹99</span>
@@ -482,9 +400,9 @@ export default function LandingPage({ onLaunchApp }) {
             >
               <div className="space-y-6">
                 <div>
-                  <span className="text-xs font-bold text-slate-450 uppercase tracking-widest">Business</span>
+                  <span className="text-xs font-bold text-slate-455 uppercase tracking-widest">Business</span>
                   <h3 className="text-xl font-bold text-slate-900 mt-1">Pro Plan</h3>
-                  <p className="text-slate-505 text-xs mt-1">For marketing agencies & power users.</p>
+                  <p className="text-slate-550 text-xs mt-1">For marketing agencies & power users.</p>
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-5xl font-extrabold text-slate-900">₹199</span>
@@ -532,7 +450,7 @@ export default function LandingPage({ onLaunchApp }) {
                 <div>
                   <span className="text-xs font-bold text-slate-455 uppercase tracking-widest">Enterprise</span>
                   <h3 className="text-xl font-bold text-slate-900 mt-1">Enterprise</h3>
-                  <p className="text-slate-505 text-xs mt-1">Custom tools for high volume teams.</p>
+                  <p className="text-slate-550 text-xs mt-1">Custom tools for high volume teams.</p>
                 </div>
                 <div className="flex items-baseline">
                   <span className="text-5xl font-extrabold text-slate-900">₹299</span>
@@ -568,6 +486,88 @@ export default function LandingPage({ onLaunchApp }) {
                   Contact Sales
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Cards Grid Section */}
+      <section id="features" className="bg-slate-100/50 border-y border-slate-200 py-20 relative z-10">
+        <div className="w-full px-6 md:px-12 lg:px-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">
+              Built for Speed, Engineered for Safety
+            </h2>
+            <p className="text-slate-600 text-base md:text-lg">
+              Everything you need to broadcast marketing messages, client notifications, and announcements through WhatsApp with built-in safeguards.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Zap className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Instant Message Delivery</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Connect and broadcast in real-time. Messages are sent sequentially with instant updates on success or error logs.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Shield className="w-6 h-6 text-teal-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Anti-Ban Mechanisms</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Uses organic staggered delays and connection handling to match natural typing patterns, protecting your WhatsApp account from restrictions.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Real-time Campaign Monitor</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Detailed delivery indicators (Sending, Success, Error status) let you know exactly who received your message and when.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Custom Recipient Fields</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Address recipients by their names. Personalizing your messages increases click-through rates and client satisfaction dramatically.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Smartphone className="w-6 h-6 text-sky-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Seamless Session Persistence</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Scan once and stay logged in. Our local session technology remembers your QR configuration so you can start sending instantly every time.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-white border border-slate-200 p-8 rounded-2xl hover:border-emerald-500/30 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Layers className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">No Backend Coding Needed</h3>
+              <p className="text-slate-655 text-sm leading-relaxed">
+                Simple, beautiful web interface controls the powerful backend driver automatically. Just input your messaging details and watch it run.
+              </p>
             </div>
           </div>
         </div>
